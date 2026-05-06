@@ -21,9 +21,9 @@
             <el-table-column property="id" label="编号" width="125" />
             <el-table-column property="title" label="标题" width="300" />
             <el-table-column property="content" label="内容" width="300" />
-            <el-table-column property="date" label="日期" width="300" />
-            <el-table-column label="操作">
-                <template slot-scope="scope">
+            <el-table-column property="date" label="日期" width="200" />
+            <el-table-column label="操作"  width="150">
+                <template slot-scope="scope" >
                     <el-button
                             size="mini"
                             @click="edit(scope.row)">编辑</el-button>

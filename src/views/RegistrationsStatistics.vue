@@ -103,7 +103,7 @@
     <el-row :gutter="16">
       <el-col :span="12">
         <el-card class="chart-card" shadow="hover">
-          <div slot="header">赛道热度 Top10</div>
+          <div slot="header">{{ topTenChartTitle }}</div>
           <div ref="trackChart" class="chart-panel"></div>
         </el-card>
       </el-col>
@@ -148,6 +148,14 @@ export default {
       competitionId: null,
       competitions: []
     };
+  },
+  computed: {
+    topTenChartTitle() {
+      if (this.competitionId != null && this.competitionId !== "") {
+        return "赛道热度 Top10";
+      }
+      return "竞赛报名 Top10";
+    }
   },
   methods: {
     statsParams() {
@@ -275,10 +283,28 @@ export default {
           );
         });
     },
+    pickCompetitionTitle(row) {
+      if (!row || typeof row !== "object") {
+        return "未命名竞赛";
+      }
+      const v =
+        row.competitionTitle ??
+        row.competition_title ??
+        row.COMPETITIONTITLE;
+      return v != null && String(v).trim() !== "" ? String(v).trim() : "未命名竞赛";
+    },
     loadTrackTop() {
       const map = {};
-      this.getFilteredRows().forEach(item => {
-        const key = item.trackName || "未知赛项";
+      const rows = this.getFilteredRows();
+      const byCompetition =
+        this.competitionId == null || this.competitionId === "";
+      rows.forEach(item => {
+        let key;
+        if (byCompetition) {
+          key = this.pickCompetitionTitle(item);
+        } else {
+          key = item.trackName || "未知赛项";
+        }
         map[key] = (map[key] || 0) + 1;
       });
       this.trackTopData = Object.keys(map)
@@ -434,7 +460,14 @@ export default {
         tooltip: {trigger: "axis"},
         xAxis: {type: "value"},
         yAxis: {type: "category", data: names},
-        series: [{name: "报名数", type: "bar", data: values, itemStyle: {color: "#E6A23C"}}]
+        series: [
+          {
+            name: "报名数",
+            type: "bar",
+            data: values,
+            itemStyle: {color: "#E6A23C"}
+          }
+        ]
       });
     },
     renderStatusChart() {

@@ -13,7 +13,7 @@
           style="margin-bottom: 16px;">
       </el-alert>
       <el-table :data="tableData" border stripe>
-        <el-table-column prop="id" label="编号" width="90"/>
+        <el-table-column type="index" label="序号" width="72" align="center" :index="tableIndex"/>
         <el-table-column prop="competitionName" label="所属竞赛" min-width="180" show-overflow-tooltip/>
         <el-table-column prop="trackName" label="赛道" width="160"/>
         <el-table-column prop="teamName" label="团队" width="160"/>
@@ -32,6 +32,17 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+          style="margin-top: 20px; text-align: right"
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :page-sizes="[5, 10, 20, 50]"
+          :page-size="pageSize"
+          :total="total"
+          :current-page.sync="currentPage"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange">
+      </el-pagination>
     </el-card>
     <el-dialog title="小组成员信息" :visible.sync="memberDialogVisible" width="520px">
       <el-table :data="memberTableData" border size="mini">
@@ -55,28 +66,55 @@ export default {
       tableData: [],
       submitterUserId: "",
       memberDialogVisible: false,
-      memberTableData: []
+      memberTableData: [],
+      pageSize: 5,
+      total: 0,
+      currentPage: 1
     }
   },
   methods: {
+    tableIndex(index) {
+      return (this.currentPage - 1) * this.pageSize + index + 1;
+    },
+    myListUrl(pageNum) {
+      const params = new URLSearchParams();
+      params.set("submitterUserId", this.submitterUserId);
+      params.set("page", String(pageNum));
+      params.set("size", String(this.pageSize));
+      return "http://localhost:8181/registrations/my?" + params.toString();
+    },
+    handleSizeChange(val) {
+      this.pageSize = val;
+      this.currentPage = 1;
+      this.loadPage(1);
+    },
+    handlePageChange(page) {
+      this.loadPage(page);
+    },
     statusTagType(status) {
       if (status === "通过") return "success";
       if (status === "驳回") return "danger";
       return "warning";
     },
     loadData() {
+      this.currentPage = 1;
+      this.loadPage(1);
+    },
+    loadPage(pageNum) {
       if (!this.submitterUserId) {
         this.$message.warning("未找到登录账号信息，请重新登录");
         return;
       }
-      axios.get("http://localhost:8181/registrations/my?submitterUserId=" + encodeURIComponent(this.submitterUserId))
-          .then(response => {
-            const res = response.data || {};
-            if (res.code === 200) {
-              this.tableData = res.data || [];
-            } else {
-              this.$message.error(res.msg || "加载失败");
-            }
+      const _this = this;
+      axios
+          .get(_this.myListUrl(pageNum))
+          .then(function (response) {
+            const body = response.data || {};
+            _this.tableData = body.data || [];
+            _this.total = Number(body.total) || 0;
+          })
+          .catch(function () {
+            _this.$message.error("加载失败");
           });
     },
     showMembers(row) {
@@ -95,7 +133,7 @@ export default {
   created() {
     const user = JSON.parse(window.localStorage.getItem("user") || "{}");
     this.submitterUserId = user.username || "";
-    this.loadData();
+    this.loadPage(1);
   }
 }
 </script>
