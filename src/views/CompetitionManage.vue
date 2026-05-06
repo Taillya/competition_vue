@@ -22,7 +22,22 @@
             <el-table-column property="type" label="类型" width="150" />
             <el-table-column property="time" label="时间" width="160" />
             <el-table-column property="status" label="状态" width="130" />
-            <el-table-column property="participants" label="报名人数" width="110" />
+            <el-table-column label="开放报名" width="90">
+                <template slot-scope="scope">
+                    <span>{{ Number(scope.row.registrationEnabled) === 1 ? '是' : '否' }}</span>
+                </template>
+            </el-table-column>
+            <el-table-column label="报名入口" width="110">
+                <template slot-scope="scope">
+                    <span>{{ entryModeText(scope.row.registrationEntryMode) }}</span>
+                </template>
+            </el-table-column>
+            <el-table-column label="报名阶段" width="120">
+                <template slot-scope="scope">
+                    <span>{{ phaseText(scope.row.registrationPhase) }}</span>
+                </template>
+            </el-table-column>
+            <el-table-column property="participants" label="已通过(支)" width="100" />
             <el-table-column property="awards" label="奖项" width="130" />
             <el-table-column label="操作" width="160">
                 <template slot-scope="scope" >
@@ -38,16 +53,18 @@
         </el-table>
         <el-pagination style="margin-top: 20px;float: right"
                        background
-                       layout="prev, pager, next"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :page-sizes="[5, 10, 20, 50]"
                        :page-size="pageSize"
                        :total="total"
                        :current-page.sync="currentPage"
+                       @size-change="handleSizeChange"
                        @current-change="page">
         </el-pagination>
 
         <!-- 添加竞赛 -->
-        <el-dialog title="添加竞赛" :visible.sync="dialogTableVisible" width="30%">
-            <el-form :model="addForm" label-width="auto" style="max-width: 600px">
+        <el-dialog title="添加竞赛" :visible.sync="dialogTableVisible" width="42%">
+            <el-form :model="addForm" label-width="120px" style="max-width: 640px">
                 <el-form-item label="名称">
                     <el-input v-model="addForm.title" />
                 </el-form-item>
@@ -61,15 +78,30 @@
                 <el-form-item label="奖项">
                     <el-input v-model="addForm.awards" />
                 </el-form-item>
+                <el-form-item label="开放网上报名">
+                    <el-switch v-model="addForm.registrationEnabled" :active-value="1" :inactive-value="0" />
+                </el-form-item>
+                <el-form-item label="报名入口">
+                    <el-select v-model="addForm.registrationEntryMode" placeholder="选择入口方式">
+                        <el-option label="先选赛道（多赛道）" value="SELECT_TRACK"/>
+                        <el-option label="直达报名表（须且仅有 1 条赛道）" value="DIRECT"/>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="报名开始">
+                    <el-date-picker v-model="addForm.registrationStart" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="不选则仅受开关控制" style="width:100%"/>
+                </el-form-item>
+                <el-form-item label="报名截止">
+                    <el-date-picker v-model="addForm.registrationEnd" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="不选则仅受开关控制" style="width:100%"/>
+                </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="addClick">添加</el-button>
                 </el-form-item>
             </el-form>
         </el-dialog>
 
-        <!-- 修改证书 -->
-        <el-dialog title="修改证书" :visible.sync="dialogTableVisible2" width="30%">
-            <el-form :model="updateForm" label-width="auto" style="max-width: 600px">
+        <!-- 修改竞赛 -->
+        <el-dialog title="修改竞赛" :visible.sync="dialogTableVisible2" width="42%">
+            <el-form :model="updateForm" label-width="120px" style="max-width: 640px">
                 <el-form-item label="ID">
                     <el-input v-model="updateForm.id" readOnly />
                 </el-form-item>
@@ -93,6 +125,21 @@
                 </el-form-item>
                 <el-form-item label="奖项">
                     <el-input v-model="updateForm.awards" />
+                </el-form-item>
+                <el-form-item label="开放网上报名">
+                    <el-switch v-model="updateForm.registrationEnabled" :active-value="1" :inactive-value="0" />
+                </el-form-item>
+                <el-form-item label="报名入口">
+                    <el-select v-model="updateForm.registrationEntryMode" placeholder="选择入口方式">
+                        <el-option label="先选赛道（多赛道）" value="SELECT_TRACK"/>
+                        <el-option label="直达报名表（须且仅有 1 条赛道）" value="DIRECT"/>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="报名开始">
+                    <el-date-picker v-model="updateForm.registrationStart" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" style="width:100%"/>
+                </el-form-item>
+                <el-form-item label="报名截止">
+                    <el-date-picker v-model="updateForm.registrationEnd" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" style="width:100%"/>
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="updateClick">修改</el-button>
@@ -120,22 +167,48 @@
                     title:'',
                     type:'',
                     awards:'',
+                    registrationEnabled: 0,
+                    registrationEntryMode: 'SELECT_TRACK',
+                    registrationStart: '',
+                    registrationEnd: ''
                 },
                 updateForm:{
                     id:'',
                     title:'',
                     type:'',
                     status:'',
-                    awards:''
+                    awards:'',
+                    registrationEnabled: 0,
+                    registrationEntryMode: 'SELECT_TRACK',
+                    registrationStart: '',
+                    registrationEnd: ''
                 }
             }
         },
         methods:{
+            entryModeText(m) {
+                if (m === 'DIRECT') return '直达报名'
+                if (m === 'SELECT_TRACK') return '先选赛道'
+                return m || '-'
+            },
+            phaseText(p) {
+                const map = {
+                    DISABLED: '未开放',
+                    NOT_STARTED: '未开始',
+                    ENDED: '已截止',
+                    OPEN: '可报名'
+                }
+                return map[p] || '-'
+            },
+            handleSizeChange(val) {
+                this.pageSize = val
+                this.currentPage = 1
+                this.page(1)
+            },
             page(currentPage){
                 const _this = this
                 axios.get('http://localhost:8181/competition/select?page='+currentPage+'&size='+_this.pageSize).then(function (response) {
                     _this.tableData = response.data.data
-                    _this.pageSize = response.data.size
                     _this.total = response.data.total
                 })
             },
@@ -149,11 +222,17 @@
                 this.updateForm.type = row.type
                 this.updateForm.status = row.status
                 this.updateForm.awards = row.awards
+                this.updateForm.registrationEnabled = row.registrationEnabled != null ? Number(row.registrationEnabled) : 0
+                this.updateForm.registrationEntryMode = row.registrationEntryMode || 'SELECT_TRACK'
+                this.updateForm.registrationStart = row.registrationStart || ''
+                this.updateForm.registrationEnd = row.registrationEnd || ''
             },
             addClick(){
                 const _this = this
-                console.log(_this.addForm)
-                axios.post('http://localhost:8181/competition/add',_this.addForm).then((response) => {
+                const payload = Object.assign({}, _this.addForm)
+                if (!payload.registrationStart) delete payload.registrationStart
+                if (!payload.registrationEnd) delete payload.registrationEnd
+                axios.post('http://localhost:8181/competition/add', payload).then((response) => {
                     if (response.data == true) {
                         _this.$alert('竞赛【'+_this.addForm.title+'】添加成功', '', {
                             confirmButtonText: '确定',
@@ -166,8 +245,10 @@
             },
             updateClick(){
                 const _this = this
-                console.log(_this.updateForm)
-                axios.put('http://localhost:8181/competition/update',_this.updateForm).then((response) => {
+                const payload = Object.assign({}, _this.updateForm)
+                if (!payload.registrationStart) delete payload.registrationStart
+                if (!payload.registrationEnd) delete payload.registrationEnd
+                axios.put('http://localhost:8181/competition/update', payload).then((response) => {
                     if (response.data == true) {
                         _this.$alert('竞赛【'+_this.updateForm.title+'】修改成功', '', {
                             confirmButtonText: '确定',
@@ -203,7 +284,6 @@
                 _this.currentPage = 1
                 axios.get('http://localhost:8181/competition/select?page=1&size='+_this.pageSize+'&keyWord='+_this.keyWord+"&type="+_this.type).then(function (response) {
                     _this.tableData = response.data.data
-                    _this.pageSize = response.data.size
                     _this.total = response.data.total
                 })
             },
@@ -212,7 +292,6 @@
             const _this = this
             axios.get('http://localhost:8181/competition/select?page=1&size='+_this.pageSize).then(function (response) {
                 _this.tableData = response.data.data
-                _this.pageSize = response.data.size
                 _this.total = response.data.total
             })
         }

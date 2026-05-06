@@ -1,7 +1,7 @@
 <template>
     <el-container class="home_container">
         <el-header class="home_header">
-            <div class="home_title">E通天下-高校竞赛后台管理系统</div>
+            <div class="home_title">e赛云 - 高校竞赛管理系统</div>
             <div class="home_userinfoContainer">
                 <el-avatar :src="imgUrl" class="user_avatar"></el-avatar>
                 <el-dropdown style="position: relative; top: -10px; left: 10px;">
@@ -72,7 +72,7 @@
                     </el-breadcrumb>
                     <router-view></router-view>
                 </el-main>
-                <el-footer class="home_footer">@V1.0-Spring Boot + Vue</el-footer>
+                <el-footer class="home_footer">@e赛云 - 高校竞赛管理系统</el-footer>
             </el-container>
         </el-container>
     </el-container>

@@ -4,7 +4,7 @@
         <div class="index1">
             <div class="index2">
                 <div class="index3">
-                    激发潜能，竞逐梦想 —— 高校竞赛管理系统，助力学子成就未来辉煌！
+                    激发潜能，竞逐梦想 —— e赛云 · 高校竞赛管理系统，助力学子成就未来辉煌！
                 </div>
                 <div class="index4">
                     Inspire potential, compete for dreams - the university competition management system helps students achieve future glory!

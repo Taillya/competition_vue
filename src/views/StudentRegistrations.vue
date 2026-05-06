@@ -14,6 +14,7 @@
       </el-alert>
       <el-table :data="tableData" border stripe>
         <el-table-column prop="id" label="编号" width="90"/>
+        <el-table-column prop="competitionName" label="所属竞赛" min-width="180" show-overflow-tooltip/>
         <el-table-column prop="trackName" label="赛道" width="160"/>
         <el-table-column prop="teamName" label="团队" width="160"/>
         <el-table-column prop="name" label="姓名" width="100"/>
@@ -24,7 +25,7 @@
             <el-tag :type="statusTagType(scope.row.status)">{{ scope.row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="date" label="报名时间"/>
+        <el-table-column prop="date" label="报名时间" width="180" show-overflow-tooltip/>
         <el-table-column label="成员" width="120">
           <template slot-scope="scope">
             <el-button type="text" @click="showMembers(scope.row)">查看成员</el-button>

@@ -39,10 +39,12 @@
         </el-table>
         <el-pagination style="margin-top: 20px;float: right"
                        background
-                       layout="prev, pager, next"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :page-sizes="[5, 10, 20, 50]"
                        :page-size="pageSize"
                        :total="total"
                        :current-page.sync="currentPage"
+                       @size-change="handleSizeChange"
                        @current-change="page">
         </el-pagination>
 
@@ -158,11 +160,15 @@
                 this.updateForm.gender = row.gender
                 this.updateForm.address = row.address
             },
+            handleSizeChange(val) {
+                this.pageSize = val
+                this.currentPage = 1
+                this.page(1)
+            },
             page(currentPage){
                 const _this = this
                 axios.get('http://localhost:8181/student/list?page='+currentPage+'&size='+_this.pageSize).then(function (response) {
                     _this.tableData = response.data.data
-                    _this.pageSize = response.data.size
                     _this.total = response.data.total
                 })
             },
@@ -172,7 +178,6 @@
                 _this.currentPage = 1
                 axios.get('http://localhost:8181/student/list?page=1&size='+_this.pageSize+'&keyWord='+_this.keyWord+"&type="+_this.type).then(function (response) {
                     _this.tableData = response.data.data
-                    _this.pageSize = response.data.size
                     _this.total = response.data.total
                 })
             },
@@ -226,7 +231,6 @@
             const _this = this
             axios.get('http://localhost:8181/student/list?page=1&size='+_this.pageSize).then(function (response) {
                 _this.tableData = response.data.data
-                _this.pageSize = response.data.size
                 _this.total = response.data.total
             })
         }

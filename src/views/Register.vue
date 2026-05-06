@@ -1,6 +1,6 @@
 <template>
   <div class="register-container">
-    <h1 class="beautified-title">E通天下-高校竞赛管理系统</h1>
+    <h1 class="beautified-title">e赛云 - 高校竞赛管理系统</h1>
     <div class="register-wrapper">
       <el-form
           ref="registerForm"

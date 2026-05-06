@@ -17,11 +17,11 @@
         竞赛信息
       </div>
       <div
-              @click="toPage('studentAiInnovate')"
+              @click="toAiRegistration"
               :class="{'active': this.$route.path === '/studentAiInnovate'}"
               class="menu-item"
       >
-        人工智能创新大赛报名
+        快捷报名
       </div>
       <div
               @click="toPage('studentScore')"
@@ -73,6 +73,12 @@
       };
     },
     methods: {
+      toAiRegistration() {
+        this.$router.push({
+          path: '/studentAiInnovate',
+          query: { competitionId: '1', _nav: String(Date.now()) }
+        }).catch(function () {});
+      },
       toPage(name) {
         if (name === "studentIndex") {
           this.$router.push("/studentIndex");

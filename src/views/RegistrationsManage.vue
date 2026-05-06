@@ -4,11 +4,16 @@
             <el-form-item label="关键字：" prop="keyWord">
                 <el-input clearable v-model="keyWord" placeholder="请输入关键字" style="width: 230px;float: left"></el-input>
                 <span style="margin-left: 60px">条件查询：</span>
-                <el-select v-model="type">
+                <el-select v-model="type" style="width: 120px">
                     <el-option label="姓名" value="name" />
                     <el-option label="团队" value="team_name" />
                 </el-select>
+                <span style="margin-left: 20px">竞赛：</span>
+                <el-select v-model="filterCompetitionId" clearable placeholder="全部竞赛" style="width: 220px">
+                    <el-option v-for="c in competitions" :key="c.id" :label="c.title" :value="c.id"/>
+                </el-select>
                 <el-button type="primary" icon="el-icon-search" style="position: relative;left: 30px;" @click="search()">搜索</el-button>
+                <el-button style="margin-left: 12px" @click="resetFilters">重置筛选</el-button>
             </el-form-item>
             <el-form-item label="报名审核策略：">
                 <el-switch
@@ -28,7 +33,8 @@
                 border
                 stripe
                 style="width: 100%">
-            <el-table-column property="id" label="编号" width="100" />
+            <el-table-column type="index" label="编号" width="72" align="center" :index="tableIndex"/>
+            <el-table-column property="competitionName" label="所属竞赛" width="200" show-overflow-tooltip />
             <el-table-column property="trackName" label="赛道" width="180" />
             <el-table-column property="teamName" label="团队" width="180" />
             <el-table-column property="name" label="姓名" width="100" />
@@ -42,29 +48,34 @@
                     <el-tag :type="statusTagType(scope.row.status)">{{ scope.row.status }}</el-tag>
                 </template>
             </el-table-column>
-            <el-table-column property="date" label="日期"/>
-            <el-table-column label="操作" width="170" fixed="right">
+            <el-table-column property="date" label="日期" width="180" show-overflow-tooltip/>
+            <el-table-column label="操作" width="220" align="center" fixed="right">
                 <template slot-scope="scope">
-                    <el-button
-                            size="mini"
-                            type="text"
-                            @click="showMembers(scope.row)">
-                        成员
-                    </el-button>
-                    <el-button
-                            size="mini"
-                            type="success"
-                            :disabled="scope.row.status !== '待审核'"
-                            @click="auditRegistration(scope.row, '通过')">
-                        通过
-                    </el-button>
-                    <el-button
-                            size="mini"
-                            type="danger"
-                            :disabled="scope.row.status !== '待审核'"
-                            @click="auditRegistration(scope.row, '驳回')">
-                        驳回
-                    </el-button>
+                    <div class="reg-action-btns">
+                        <el-button
+                                type="primary"
+                                size="mini"
+                                plain
+                                @click="showMembers(scope.row)">
+                            成员
+                        </el-button>
+                        <el-button
+                                type="success"
+                                size="mini"
+                                plain
+                                :disabled="scope.row.status !== '待审核'"
+                                @click="auditRegistration(scope.row, '通过')">
+                            通过
+                        </el-button>
+                        <el-button
+                                type="danger"
+                                size="mini"
+                                plain
+                                :disabled="scope.row.status !== '待审核'"
+                                @click="auditRegistration(scope.row, '驳回')">
+                            驳回
+                        </el-button>
+                    </div>
                 </template>
             </el-table-column>
         </el-table>
@@ -76,10 +87,12 @@
         </el-dialog>
         <el-pagination style="margin-top: 20px;float: right"
                        background
-                       layout="prev, pager, next"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :page-sizes="[5, 10, 20, 50]"
                        :page-size="pageSize"
                        :total="total"
                        :current-page.sync="currentPage"
+                       @size-change="handleSizeChange"
                        @current-change="page">
         </el-pagination>
 
@@ -94,6 +107,8 @@
                 tableData:'',
                 keyWord:'',
                 type:'name',
+                filterCompetitionId: null,
+                competitions: [],
                 pageSize:5,
                 total:'',
                 currentPage:1,
@@ -103,26 +118,56 @@
             }
         },
         methods:{
+            listQueryUrl(pageNum) {
+                const p = this.pageSize
+                const params = new URLSearchParams()
+                params.set('page', String(pageNum))
+                params.set('size', String(p))
+                const kw = (this.keyWord && String(this.keyWord).trim()) ? String(this.keyWord).trim() : ''
+                if (kw) {
+                    params.set('keyWord', kw)
+                    params.set('type', this.type || 'name')
+                }
+                const cid = this.filterCompetitionId
+                if (cid !== null && cid !== undefined && cid !== '') {
+                    params.set('competitionId', String(cid))
+                }
+                params.set('_t', String(Date.now()))
+                return 'http://localhost:8181/registrations/list?' + params.toString()
+            },
+            resetFilters() {
+                this.keyWord = ''
+                this.filterCompetitionId = null
+                this.type = 'name'
+                this.currentPage = 1
+                this.search()
+            },
+            handleSizeChange(val) {
+                this.pageSize = val
+                this.currentPage = 1
+                this.page(1)
+            },
             statusTagType(status) {
                 if (status === '通过') return 'success'
                 if (status === '驳回') return 'danger'
                 return 'warning'
             },
+            /** 列表序号：当前筛选结果内从 1 递增，随分页连续 */
+            tableIndex(index) {
+                return (this.currentPage - 1) * this.pageSize + index + 1
+            },
             page(currentPage){
                 const _this = this
-                axios.get('http://localhost:8181/registrations/list?page='+currentPage+'&size='+_this.pageSize).then(function (response) {
+                axios.get(_this.listQueryUrl(currentPage)).then(function (response) {
                     _this.tableData = response.data.data
-                    _this.pageSize = response.data.size
                     _this.total = response.data.total
                 })
             },
             search() {
                 const _this = this
-                //让翻页复原
                 _this.currentPage = 1
-                axios.get('http://localhost:8181/registrations/list?page=1&size='+_this.pageSize+'&keyWord='+_this.keyWord+"&type="+_this.type).then(function (response) {
+                axios.get(_this.listQueryUrl(1)).then(function (response) {
                     _this.tableData = response.data.data
-                    _this.pageSize = response.data.size
                     _this.total = response.data.total
                 })
             },
@@ -176,9 +221,11 @@
         },
         created() {
             const _this = this
-            axios.get('http://localhost:8181/registrations/list?page=1&size='+_this.pageSize).then(function (response) {
+            axios.get('http://localhost:8181/competition/list').then(function (resp) {
+                _this.competitions = resp.data || []
+            })
+            axios.get(_this.listQueryUrl(1)).then(function (response) {
                 _this.tableData = response.data.data
-                _this.pageSize = response.data.size
                 _this.total = response.data.total
             })
             _this.loadAuditStrategy()
@@ -187,5 +234,18 @@
 </script>
 
 <style scoped>
+    .reg-action-btns {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
 
+    .reg-action-btns .el-button {
+        margin-left: 0;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
 </style>

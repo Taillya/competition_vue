@@ -1,25 +1,34 @@
 <template>
     <div class="registration-container index">
         <headers />
+        <el-alert
+                v-if="competitionDetail && competitionDetail.registrationPhase && competitionDetail.registrationPhase !== 'OPEN'"
+                :title="phaseAlertTitle"
+                type="warning"
+                show-icon
+                :closable="false"
+                style="margin-bottom: 16px"
+        />
+
         <!-- 竞赛基本信息 -->
         <div class="competition-header" :style="headerStyle">
             <div class="overlay"></div>
-            <h1 class="title">全国大学生人工智能创新大赛</h1>
+            <h1 class="title">{{ competitionTitle }}</h1>
             <div class="meta-info">
                 <el-tag type="warning" effect="dark">
                     <i class="el-icon el-icon-time"></i>
-                    2025-03-15 ~ 2025-06-20
+                    {{ registrationTimeHint }}
                 </el-tag>
-                <el-tag type="success" effect="light">
-                    报名进行中
+                <el-tag :type="phaseTagType" effect="light">
+                    {{ phaseHint }}
                 </el-tag>
             </div>
         </div>
 
         <!-- 报名流程步骤 -->
-        <el-steps :active="currentStep" align-center class="progress-steps">
+        <el-steps :active="stepIndex" align-center class="progress-steps">
             <el-step
-                    v-for="(step, index) in steps"
+                    v-for="(step, index) in stepLabels"
                     :key="index"
                     :title="step.title"
                     :icon="step.icon"
@@ -29,9 +38,9 @@
 
         <!-- 步骤内容 -->
         <transition name="fade-slide" mode="out-in">
-            <div :key="currentStep" class="step-content">
+            <div :key="stepIndex + '-' + skipTrackStep" class="step-content">
                 <!-- 选择赛道 -->
-                <div v-if="currentStep === 0" class="track-selection">
+                <div v-if="showTrackPanel" class="track-selection">
                     <div
                             v-for="track in tracks"
                             :key="track.id"
@@ -57,7 +66,7 @@
 
                 <!-- 填写信息 -->
                 <el-form
-                        v-if="currentStep === 1"
+                        v-if="showFormPanel"
                         ref="formData"
                         :model="formData"
                         class="info-form"
@@ -129,7 +138,7 @@
                 </el-form>
 
                 <!-- 确认提交 -->
-                <div v-if="currentStep === 2" class="confirmation">
+                <div v-if="showConfirmPanel" class="confirmation">
                     <el-descriptions title="报名信息概览" border>
                         <el-descriptions-item label="参赛赛道">
                             {{ formData.trackName }}
@@ -174,12 +183,12 @@
 
         <!-- 操作按钮 -->
         <div class="action-buttons">
-            <el-button :disabled="currentStep === 0" @click="prevStep">
+            <el-button :disabled="stepIndex === 0" @click="prevStep">
                 <i class="el-icon el-icon-arrow-left"></i>
                 上一步
             </el-button>
 
-            <el-button v-if="currentStep < steps.length - 1" type="primary" @click="nextStep">
+            <el-button v-if="stepIndex < maxStepIndex" type="primary" @click="nextStep">
                 <i class="el-icon el-icon-arrow-right"></i>
                 下一步
             </el-button>
@@ -205,14 +214,14 @@
         },
         data() {
             return {
-                tracks: '',
-                currentStep: 0,
-                steps: [
-                    { title: '选择赛道', icon: 'el-icon-date' },
-                    { title: '填写信息', icon: 'el-icon-edit-outline' },
-                    { title: '确认提交', icon: 'el-icon-folder-checked' }
-                ],
+                tracks: [],
+                competitionId: null,
+                competitionDetail: null,
+                skipTrackStep: false,
+                stepIndex: 0,
+                loadError: '',
                 formData: {
+                    competitionId: '',
                     trackId:'',
                     trackName:'',
                     agreed: '',
@@ -249,35 +258,95 @@
                 provinceOptions: PROVINCES
             }
         },
+        computed: {
+            previewMembers() {
+                return this.buildMembersPayload()
+            },
+            stepLabels() {
+                if (this.skipTrackStep) {
+                    return [
+                        { title: '填写信息', icon: 'el-icon-edit-outline' },
+                        { title: '确认提交', icon: 'el-icon-folder-checked' }
+                    ]
+                }
+                return [
+                    { title: '选择赛道', icon: 'el-icon-date' },
+                    { title: '填写信息', icon: 'el-icon-edit-outline' },
+                    { title: '确认提交', icon: 'el-icon-folder-checked' }
+                ]
+            },
+            maxStepIndex() {
+                return this.skipTrackStep ? 1 : 2
+            },
+            showTrackPanel() {
+                return !this.skipTrackStep && this.stepIndex === 0
+            },
+            showFormPanel() {
+                return (this.skipTrackStep && this.stepIndex === 0) || (!this.skipTrackStep && this.stepIndex === 1)
+            },
+            showConfirmPanel() {
+                return (this.skipTrackStep && this.stepIndex === 1) || (!this.skipTrackStep && this.stepIndex === 2)
+            },
+            competitionTitle() {
+                return (this.competitionDetail && this.competitionDetail.title) || '竞赛报名'
+            },
+            registrationTimeHint() {
+                const d = this.competitionDetail
+                if (!d) return ''
+                const s = d.registrationStart || ''
+                const e = d.registrationEnd || ''
+                if (s && e) return `${s} ~ ${e}`
+                if (s) return `${s} 起`
+                if (e) return `截止 ${e}`
+                return '报名时间请见竞赛说明'
+            },
+            phaseHint() {
+                const m = {
+                    DISABLED: '本站未开放报名',
+                    NOT_STARTED: '报名未开始',
+                    ENDED: '报名已结束',
+                    OPEN: '报名进行中'
+                }
+                const p = this.competitionDetail && this.competitionDetail.registrationPhase
+                return (p && m[p]) || '加载中'
+            },
+            phaseTagType() {
+                const p = this.competitionDetail && this.competitionDetail.registrationPhase
+                if (p === 'OPEN') return 'success'
+                if (p === 'NOT_STARTED') return 'warning'
+                if (p === 'ENDED') return 'danger'
+                return 'info'
+            },
+            phaseAlertTitle() {
+                return `当前不可提交报名：${this.phaseHint}`
+            }
+        },
         methods: {
             stepStatus(index) {
-                if (index < this.currentStep) return 'finish'
-                return index === this.currentStep? 'process' : 'wait'
+                if (index < this.stepIndex) return 'finish'
+                return index === this.stepIndex ? 'process' : 'wait'
             },
             selectTrack(trackId,trackName) {
                 this.formData.trackId = trackId
                 this.formData.trackName = trackName
             },
             prevStep() {
-                if (this.currentStep > 0) this.currentStep--
+                if (this.stepIndex > 0) this.stepIndex--
             },
             nextStep() {
-                if (this.currentStep < this.steps.length - 1) {
-                    if (this.currentStep === 0) {
-                        if (!this.formData.trackId) {
-                            this.$alert('请选择参赛赛道！', '', {
-                                confirmButtonText: '确定'
-                            });
-                        } else {
-                            this.currentStep++
-                        }
-                    } else if (this.currentStep === 1) {
-                        this.$refs['formData'].validate((valid) => {
-                            if (valid) {
-                                this.currentStep++
-                            }
-                        });
+                if (this.stepIndex >= this.maxStepIndex) return
+                if (this.showTrackPanel) {
+                    if (!this.formData.trackId) {
+                        this.$alert('请选择参赛赛道！', '', { confirmButtonText: '确定' })
+                        return
                     }
+                    this.stepIndex++
+                    return
+                }
+                if (this.showFormPanel) {
+                    this.$refs['formData'].validate((valid) => {
+                        if (valid) this.stepIndex++
+                    })
                 }
             },
             addMember() {
@@ -302,6 +371,10 @@
                 return members
             },
             submitRegistration() {
+                if (!this.competitionDetail || this.competitionDetail.registrationPhase !== 'OPEN') {
+                    this.$message.warning('当前不可提交（未开放报名或不在报名时间内）')
+                    return
+                }
                 this.submitting = true
                 const selectedProvince = this.provinceOptions.find(item => item.code === this.formData.provinceCode)
                 this.formData.provinceName = selectedProvince ? selectedProvince.name : ''
@@ -313,7 +386,8 @@
                 }
                 const payload = {
                     ...this.formData,
-                    members
+                    members,
+                    competitionId: this.formData.competitionId || this.competitionId
                 }
                 const _this = this
                 axios.post('http://localhost:8181/registrations/add', payload).then(response => {
@@ -331,11 +405,52 @@
                         });
                     }
                 })
-            }
-        },
-        computed: {
-            previewMembers() {
-                return this.buildMembersPayload()
+            },
+            bootstrapRegistrationFlow() {
+                const qid = this.$route.query.competitionId
+                const _this = this
+                _this.stepIndex = 0
+                _this.skipTrackStep = false
+                _this.tracks = []
+                const detailUrl = qid
+                    ? ('http://localhost:8181/competition/detail/' + encodeURIComponent(qid))
+                    : 'http://localhost:8181/competition/defaultForRegistration'
+                axios.get(detailUrl).then(function (resp) {
+                    const body = resp.data || {}
+                    if (body.code !== 200 || !body.data) {
+                        _this.loadError = body.msg || '竞赛信息加载失败'
+                        _this.$message.error(_this.loadError)
+                        return
+                    }
+                    const d = body.data
+                    _this.competitionDetail = d
+                    _this.competitionId = d.id
+                    _this.formData.competitionId = d.id
+                    const direct = d.registrationEntryMode === 'DIRECT'
+                    _this.skipTrackStep = !!direct
+                    axios.get('http://localhost:8181/track/byCompetition?competitionId=' + encodeURIComponent(d.id)).then(function (tr) {
+                        _this.tracks = tr.data || []
+                        if (direct) {
+                            if (!_this.tracks || _this.tracks.length !== 1) {
+                                const n = (_this.tracks && _this.tracks.length) || 0
+                                _this.$message.error(
+                                    '「直达报名」表示跳过选赛道步骤，但仍需 1 条赛道用于保存报名表。' +
+                                    '当前该竞赛下赛道数为 ' + n + '。请在「赛道管理」中为该竞赛新增且仅保留 1 条赛道（competition_id 指向本竞赛）。'
+                                )
+                                _this.skipTrackStep = false
+                                return
+                            }
+                            const t0 = _this.tracks[0]
+                            _this.formData.trackId = t0.id
+                            _this.formData.trackName = t0.name
+                            _this.stepIndex = 0
+                        } else {
+                            _this.stepIndex = 0
+                        }
+                    })
+                }).catch(function () {
+                    _this.$message.error('竞赛信息加载失败')
+                })
             }
         },
         created() {
@@ -347,9 +462,12 @@
             if (currentUser && currentUser.name) {
                 _this.formData.name = currentUser.name
             }
-            axios.get('http://localhost:8181/track/list').then(function (resp) {
-                _this.tracks = resp.data
-            })
+            _this.bootstrapRegistrationFlow()
+        },
+        watch: {
+            '$route.fullPath'() {
+                this.bootstrapRegistrationFlow()
+            }
         }
     }
 </script>

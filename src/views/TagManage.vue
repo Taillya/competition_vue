@@ -22,10 +22,12 @@
         </el-table>
         <el-pagination style="margin-top: 20px;float: right"
                        background
-                       layout="prev, pager, next"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :page-sizes="[5, 10, 20, 50]"
                        :page-size="pageSize"
                        :total="total"
                        :current-page.sync="currentPage"
+                       @size-change="handleSizeChange"
                        @current-change="page">
         </el-pagination>
 
@@ -82,6 +84,11 @@
             }
         },
         methods:{
+            handleSizeChange(val) {
+                this.pageSize = val
+                this.currentPage = 1
+                this.page(1)
+            },
             add(){
                 this.dialogTableVisible = true
             },
@@ -94,7 +101,6 @@
                 const _this = this
                 axios.get('http://localhost:8181/tag/select?page='+currentPage+'&size='+_this.pageSize).then(function (response) {
                     _this.tableData = response.data.data
-                    _this.pageSize = response.data.size
                     _this.total = response.data.total
                 })
             },
@@ -148,7 +154,6 @@
             const _this = this
             axios.get('http://localhost:8181/tag/select?page=1&size='+_this.pageSize).then(function (response) {
                 _this.tableData = response.data.data
-                _this.pageSize = response.data.size
                 _this.total = response.data.total
             })
         }
