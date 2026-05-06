@@ -29,13 +29,36 @@
 
     <el-card shadow="never" class="toolbar-card">
       <el-form inline>
+        <el-form-item label="年份">
+          <el-input-number
+            v-model="statsYear"
+            :min="2000"
+            :max="2100"
+            controls-position="right"
+            @change="loadAll"
+          />
+        </el-form-item>
+        <el-form-item label="竞赛">
+          <el-select
+            v-model="competitionId"
+            clearable
+            filterable
+            placeholder="全部竞赛"
+            style="width: 260px"
+            @change="loadAll"
+          >
+            <el-option
+              v-for="c in competitions"
+              :key="c.id"
+              :label="c.title"
+              :value="c.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-tag :type="selectedProvinceName ? 'success' : 'info'">
             当前筛选：{{ selectedProvinceName || "全国" }}
           </el-tag>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="el-icon-refresh" @click="loadAll">刷新</el-button>
         </el-form-item>
         <el-form-item>
           <el-button
@@ -43,6 +66,11 @@
               :disabled="!selectedProvinceName"
               @click="clearProvinceFilter">
             清除省份筛选
+          </el-button>
+        </el-form-item>
+        <el-form-item class="toolbar-refresh">
+          <el-button type="primary" icon="el-icon-refresh" @click="resetDefaultsAndReload">
+            刷新
           </el-button>
         </el-form-item>
       </el-form>
@@ -66,7 +94,7 @@
       </el-col>
       <el-col :span="12">
         <el-card class="chart-card" shadow="hover">
-          <div slot="header">月度报名趋势</div>
+          <div slot="header">历年报名趋势（按年度）</div>
           <div ref="monthChart" class="chart-panel"></div>
         </el-card>
       </el-col>
@@ -105,7 +133,7 @@ export default {
       },
       provinceData: [],
       provinceMapData: [],
-      monthData: [],
+      yearTrendData: [],
       trackTopData: [],
       statusData: [],
       dashboardRawData: [],
@@ -115,41 +143,57 @@ export default {
       provinceChart: null,
       monthChart: null,
       trackChart: null,
-      statusChart: null
+      statusChart: null,
+      statsYear: new Date().getFullYear(),
+      competitionId: null,
+      competitions: []
     };
   },
   methods: {
+    statsParams() {
+      const p = { year: this.statsYear };
+      if (this.competitionId != null && this.competitionId !== "") {
+        p.competitionId = this.competitionId;
+      }
+      return p;
+    },
+    loadCompetitions() {
+      const _this = this;
+      axios
+        .get("http://localhost:8181/competition/list")
+        .then(function (resp) {
+          _this.competitions = resp.data || [];
+        })
+        .catch(function () {
+          _this.$message.error("竞赛列表加载失败");
+        });
+    },
     loadAll() {
       this.loadProvinceDistribution();
       this.loadDashboardRaw();
+      this.loadYearTrend();
     },
-    loadOverview() {
-      const _this = this;
-      axios.post("http://localhost:8181/registrations/statistics/registrationOverview", {})
-          .then(function (response) {
-            const payload = response.data || {};
-            if (payload.code !== 200) {
-              return;
-            }
-            const row = (payload.data && payload.data[0]) || {};
-            _this.overview.total = Number(row.total) || 0;
-            _this.overview.approvedCount = Number(row.approvedCount) || 0;
-            _this.overview.pendingCount = Number(row.pendingCount) || 0;
-            _this.overview.rejectedCount = Number(row.rejectedCount) || 0;
-            _this.overview.approvalRate = Number(row.approvalRate) || 0;
-          });
+    resetDefaultsAndReload() {
+      this.statsYear = new Date().getFullYear();
+      this.competitionId = null;
+      this.selectedProvinceName = "";
+      this.loadAll();
     },
     requestData(apiCode, onSuccess) {
       const _this = this;
-      axios.post("http://localhost:8181/registrations/statistics/" + apiCode, {})
-          .then(function (response) {
-            const payload = response.data || {};
-            if (payload.code !== 200) {
-              _this.$message.error(payload.msg || "统计数据加载失败");
-              return;
-            }
-            onSuccess(payload.data || []);
-          });
+      axios
+        .post(
+          "http://localhost:8181/registrations/statistics/" + apiCode,
+          _this.statsParams()
+        )
+        .then(function (response) {
+          const payload = response.data || {};
+          if (payload.code !== 200) {
+            _this.$message.error(payload.msg || "统计数据加载失败");
+            return;
+          }
+          onSuccess(payload.data || []);
+        });
     },
     loadProvinceDistribution() {
       this.requestData("registrationByProvinceMap", data => {
@@ -184,16 +228,52 @@ export default {
             this.$message.error("中国地图数据加载失败，将仅展示省份Top图表");
           });
     },
-    loadMonthTrend() {
-      const map = {};
-      this.getFilteredRows().forEach(item => {
-        const key = item.month || "未知月份";
-        map[key] = (map[key] || 0) + 1;
-      });
-      this.monthData = Object.keys(map)
-          .sort()
-          .map(key => ({name: key, value: map[key]}));
-      this.renderMonthChart();
+    pickStatLabel(item) {
+      if (!item || typeof item !== "object") {
+        return "";
+      }
+      const v =
+        item.name ??
+        item.NAME ??
+        item.year ??
+        item.YEAR ??
+        item.y;
+      return v != null && v !== "" ? String(v) : "";
+    },
+    pickStatValue(item) {
+      if (!item || typeof item !== "object") {
+        return 0;
+      }
+      const v = item.value ?? item.VALUE ?? item.cnt ?? item.COUNT;
+      return Number(v) || 0;
+    },
+    loadYearTrend() {
+      const _this = this;
+      axios
+        .post(
+          "http://localhost:8181/registrations/statistics/registrationByYear",
+          _this.statsParams()
+        )
+        .then(function (response) {
+          const payload = response.data || {};
+          if (payload.code !== 200) {
+            _this.$message.error(payload.msg || "历年趋势加载失败");
+            return;
+          }
+          const data = payload.data || [];
+          _this.yearTrendData = data.map(item => ({
+            name: _this.pickStatLabel(item),
+            value: _this.pickStatValue(item)
+          }));
+          _this.$nextTick(function () {
+            _this.renderYearTrendChart();
+          });
+        })
+        .catch(function () {
+          _this.$message.error(
+            "历年趋势接口请求失败：请确认后端已更新并包含 registrationByYear，必要时查看控制台/Network"
+          );
+        });
     },
     loadTrackTop() {
       const map = {};
@@ -232,7 +312,6 @@ export default {
     },
     refreshLinkedPanels() {
       this.loadOverviewByRows();
-      this.loadMonthTrend();
       this.loadTrackTop();
       this.loadStatusDistribution();
     },
@@ -333,9 +412,12 @@ export default {
         });
       }
     },
-    renderMonthChart() {
-      const names = this.monthData.map(item => item.name);
-      const values = this.monthData.map(item => Number(item.value) || 0);
+    renderYearTrendChart() {
+      if (!this.$refs.monthChart) {
+        return;
+      }
+      const names = this.yearTrendData.map(item => item.name);
+      const values = this.yearTrendData.map(item => Number(item.value) || 0);
       if (!this.monthChart) this.monthChart = echarts.init(this.$refs.monthChart);
       this.monthChart.setOption({
         tooltip: {trigger: "axis"},
@@ -381,6 +463,7 @@ export default {
     }
   },
   mounted() {
+    this.loadCompetitions();
     this.ensureChinaMap().finally(() => {
       this.loadAll();
     });
@@ -436,6 +519,17 @@ export default {
 
 .toolbar-card {
   margin-bottom: 16px;
+}
+
+.toolbar-card .el-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+}
+
+.toolbar-card .toolbar-refresh {
+  margin-left: auto;
 }
 
 .chart-row {
