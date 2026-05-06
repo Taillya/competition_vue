@@ -13,9 +13,12 @@ import CompetitionManage from "../views/CompetitionManage";
 import NoticeManage from "../views/NoticeManage";
 import TrackManage from "../views/TrackManage";
 import RegistrationsManage from "../views/RegistrationsManage";
+import RegistrationsStatistics from "../views/RegistrationsStatistics";
 import ScoreManage from "../views/ScoreManage";
 import StudentManage from "../views/StudentManage";
 import TagManage from "../views/TagManage";
+import Register from "../views/Register";
+import StudentRegistrations from "../views/StudentRegistrations";
 
 Vue.use(VueRouter)
 
@@ -52,13 +55,18 @@ const routes = [
         component: RegistrationsManage
       },
       {
+        path: '/registrationsStatistics',
+        name: '报名统计',
+        component: RegistrationsStatistics
+      },
+      {
         path: '/scoreManage',
         name: '成绩管理',
         component: ScoreManage
       },
       {
         path: '/studentManage',
-        name: '学生管理',
+        name: '用户管理',
         component: StudentManage
       },
       {
@@ -79,6 +87,11 @@ const routes = [
     component: Login
   },
   {
+    path: '/register',
+    name: '注册',
+    component: Register
+  },
+  {
     path: '/studentNotice',
     name: '公告查询',
     component: StudentNotice
@@ -87,6 +100,11 @@ const routes = [
     path: '/studentScore',
     name: '成绩查询',
     component: StudentScore
+  },
+  {
+    path: '/studentRegistrations',
+    name: '我的报名',
+    component: StudentRegistrations
   },
   {
     path: '/studentAiInnovate',

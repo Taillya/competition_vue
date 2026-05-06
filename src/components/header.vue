@@ -31,6 +31,13 @@
         成绩与证书
       </div>
       <div
+              @click="toPage('studentRegistrations')"
+              :class="{'active': this.$route.path === '/studentRegistrations'}"
+              class="menu-item"
+      >
+        我的报名
+      </div>
+      <div
               @click="toPage('studentNotice')"
               :class="{'active': this.$route.path === '/studentNotice'}"
               class="menu-item"
@@ -75,6 +82,8 @@
           this.$router.push("/studentAiInnovate");
         } else if (name === "studentScore") {
           this.$router.push("/studentScore");
+        } else if (name === "studentRegistrations") {
+          this.$router.push("/studentRegistrations");
         } else if (name === "studentNotice") {
           this.$router.push("/studentNotice");
         } else if (name === "chat") {

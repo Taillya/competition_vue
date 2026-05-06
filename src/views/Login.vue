@@ -34,6 +34,9 @@
                 <el-form-item style="width:100%;">
                     <el-button type="primary" style="width:80%;" @click="handleSubmit" :loading="logining">登录</el-button>
                 </el-form-item>
+                <el-form-item style="margin-top: -10px; text-align: center;">
+                    <el-button type="text" @click="$router.push('/register')">没有账号？去注册</el-button>
+                </el-form-item>
             </el-form>
         </div>
     </div>
@@ -85,6 +88,15 @@
                         return false;
                     }
                 })
+            }
+        },
+        mounted() {
+            const prefillUsername = localStorage.getItem('prefillStudentUsername')
+            if (prefillUsername) {
+                this.ruleForm.username = prefillUsername
+                this.ruleForm.password = ''
+                this.ruleForm.type = 'student'
+                localStorage.removeItem('prefillStudentUsername')
             }
         }
     }

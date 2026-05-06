@@ -19,13 +19,13 @@
                 style="width: 100%">
             <el-table-column property="id" label="编号" width="80" />
             <el-table-column property="title" label="名称" width="220" />
-            <el-table-column property="type" label="类型" width="180" />
+            <el-table-column property="type" label="类型" width="150" />
             <el-table-column property="time" label="时间" width="160" />
             <el-table-column property="status" label="状态" width="130" />
-            <el-table-column property="participants" label="报名人数" width="130" />
+            <el-table-column property="participants" label="报名人数" width="110" />
             <el-table-column property="awards" label="奖项" width="130" />
-            <el-table-column label="操作">
-                <template slot-scope="scope">
+            <el-table-column label="操作" width="160">
+                <template slot-scope="scope" >
                     <el-button
                             size="mini"
                             @click="edit(scope.row)">编辑</el-button>

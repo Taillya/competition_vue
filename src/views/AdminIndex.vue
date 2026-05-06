@@ -37,6 +37,11 @@
                             <i class="el-icon-s-flag"></i>报名管理
                         </div>
                     </el-menu-item>
+                    <el-menu-item index="registrationsStatistics">
+                        <div class="menu-item-content">
+                            <i class="el-icon-data-analysis"></i>报名统计
+                        </div>
+                    </el-menu-item>
                     <el-menu-item index="scoreManage">
                         <div class="menu-item-content">
                             <i class="el-icon-s-platform"></i>成绩管理
@@ -44,7 +49,7 @@
                     </el-menu-item>
                     <el-menu-item index="studentManage">
                         <div class="menu-item-content">
-                            <i class="el-icon-s-custom"></i>学生管理
+                            <i class="el-icon-s-custom"></i>用户管理
                         </div>
                     </el-menu-item>
                     <el-menu-item index="trackManage">

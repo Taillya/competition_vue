@@ -72,8 +72,8 @@
                         <el-input v-model="formData.name" placeholder="请输入姓名" clearable/>
                     </el-form-item>
 
-                    <el-form-item label="学号" prop="studentId">
-                        <el-input v-model="formData.studentId" placeholder="请输入学号" clearable/>
+                    <el-form-item label="队长身份证号" prop="idCard">
+                        <el-input v-model="formData.idCard" placeholder="请输入队长身份证号" clearable/>
                     </el-form-item>
 
                     <el-form-item label="联系电话" prop="phone">
@@ -82,6 +82,33 @@
 
                     <el-form-item label="邮箱" prop="email">
                         <el-input v-model="formData.email" placeholder="请输入邮箱" clearable/>
+                    </el-form-item>
+
+                    <el-form-item label="所在省份" prop="provinceCode">
+                        <el-select v-model="formData.provinceCode" placeholder="请选择省份" filterable clearable style="width: 100%">
+                            <el-option
+                                    v-for="item in provinceOptions"
+                                    :key="item.code"
+                                    :label="item.name"
+                                    :value="item.code"
+                            />
+                        </el-select>
+                    </el-form-item>
+
+                    <el-form-item label="团队成员（含队长）" prop="members">
+                        <div class="member-list">
+                            <div class="member-row member-leader">
+                                <el-input v-model="formData.name" placeholder="队长姓名" disabled style="width: 30%; margin-right: 10px;"/>
+                                <el-input v-model="formData.idCard" placeholder="队长身份证号" disabled style="width: 40%; margin-right: 10px;"/>
+                                <el-tag type="success">队长</el-tag>
+                            </div>
+                            <div class="member-row" v-for="(member, index) in extraMembers" :key="index">
+                                <el-input v-model="member.memberName" placeholder="成员姓名" style="width: 30%; margin-right: 10px;"/>
+                                <el-input v-model="member.memberIdCard" placeholder="成员身份证号" style="width: 40%; margin-right: 10px;"/>
+                                <el-button type="danger" icon="el-icon-delete" @click="removeMember(index)" circle></el-button>
+                            </div>
+                            <el-button type="primary" plain icon="el-icon-plus" @click="addMember">添加成员</el-button>
+                        </div>
                     </el-form-item>
 
                     <el-form-item label="电子签名" prop="signature">
@@ -113,8 +140,8 @@
                         <el-descriptions-item label="姓名">
                             {{ formData.name }}
                         </el-descriptions-item>
-                        <el-descriptions-item label="学号">
-                            {{ formData.studentId }}
+                        <el-descriptions-item label="队长身份证号">
+                            {{ formData.idCard }}
                         </el-descriptions-item>
                         <el-descriptions-item label="联系电话">
                             {{ formData.phone }}
@@ -122,10 +149,20 @@
                         <el-descriptions-item label="邮箱">
                             {{ formData.email }}
                         </el-descriptions-item>
+                        <el-descriptions-item label="所在省份">
+                            {{ formData.provinceName }}
+                        </el-descriptions-item>
                         <el-descriptions-item label="电子签名">
                             {{ formData.signature }}
                         </el-descriptions-item>
                     </el-descriptions>
+                    <div class="member-preview">
+                        <div class="member-preview-title">成员信息确认</div>
+                        <el-table :data="previewMembers" border size="mini">
+                            <el-table-column prop="memberName" label="姓名"/>
+                            <el-table-column prop="memberIdCard" label="身份证号"/>
+                        </el-table>
+                    </div>
 
                     <div class="signature">
                         <i class="sign-icon el-icon-s-check"></i>
@@ -159,6 +196,7 @@
 <script>
     import headers from '/src/components/header.vue'
     import bottoms from '/src/components/bottom.vue'
+    import { PROVINCES } from '/src/constants/provinces'
 
     export default {
         components: {
@@ -180,28 +218,35 @@
                     agreed: '',
                     teamName: '',
                     name: '',
-                    studentId: '',
+                    idCard: '',
                     phone: '',
                     email: '',
+                    provinceCode: '',
+                    provinceName: '',
+                    submitterUserId: '',
+                    members: [],
                     signature: ''
                 },
+                extraMembers: [],
                 submitting: false,
                 formRules: {
                     agreed: [{ required: true, message: '请阅读并同意声明'}],
                     teamName: [{ required: true, message: '请输入团队名称' }],
                     name: [{ required: true, message: '请输入姓名' }],
-                    studentId: [{ required: true, message: '请输入学号' }],
+                    idCard: [{ required: true, message: '请输入队长身份证号' }],
                     phone: [{ required: true, message: '请输入联系电话' }],
                     email: [
                         { required: true, message: '请输入邮箱' },
                         { type: 'email', message: '请输入正确的邮箱地址' }
                     ],
+                    provinceCode: [{ required: true, message: '请选择所在省份' }],
                     signature: [{ required: true, message: '请输入电子签名' }]
                 },
                 headerStyle: {
                     backgroundImage: `linear-gradient(45deg, #409EFF, #36a1f8)`
                 },
-                tagTypes: ['', 'success', 'warning', 'danger', 'info']
+                tagTypes: ['', 'success', 'warning', 'danger', 'info'],
+                provinceOptions: PROVINCES
             }
         },
         methods: {
@@ -235,10 +280,43 @@
                     }
                 }
             },
+            addMember() {
+                this.extraMembers.push({ memberName: '', memberIdCard: '' })
+            },
+            removeMember(index) {
+                this.extraMembers.splice(index, 1)
+            },
+            buildMembersPayload() {
+                const members = [{
+                    memberName: this.formData.name,
+                    memberIdCard: this.formData.idCard
+                }]
+                this.extraMembers.forEach(member => {
+                    if (member.memberName && member.memberIdCard) {
+                        members.push({
+                            memberName: member.memberName,
+                            memberIdCard: member.memberIdCard
+                        })
+                    }
+                })
+                return members
+            },
             submitRegistration() {
                 this.submitting = true
+                const selectedProvince = this.provinceOptions.find(item => item.code === this.formData.provinceCode)
+                this.formData.provinceName = selectedProvince ? selectedProvince.name : ''
+                const members = this.buildMembersPayload()
+                if (members.length === 0) {
+                    this.submitting = false
+                    this.$alert('请至少完善队长信息！', '', { confirmButtonText: '确定' })
+                    return
+                }
+                const payload = {
+                    ...this.formData,
+                    members
+                }
                 const _this = this
-                axios.post('http://localhost:8181/registrations/add', this.formData).then(response => {
+                axios.post('http://localhost:8181/registrations/add', payload).then(response => {
                     _this.submitting = false
                     if (response.data == true) {
                         _this.$alert('提交成功！', '', {
@@ -255,8 +333,20 @@
                 })
             }
         },
+        computed: {
+            previewMembers() {
+                return this.buildMembersPayload()
+            }
+        },
         created() {
             const _this = this
+            const currentUser = JSON.parse(window.localStorage.getItem('user') || '{}')
+            if (currentUser && currentUser.username) {
+                _this.formData.submitterUserId = currentUser.username
+            }
+            if (currentUser && currentUser.name) {
+                _this.formData.name = currentUser.name
+            }
             axios.get('http://localhost:8181/track/list').then(function (resp) {
                 _this.tracks = resp.data
             })
@@ -379,6 +469,21 @@
         gap: 0.5rem;
     }
 
+    .registration-container .member-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .registration-container .member-row {
+        display: flex;
+        align-items: center;
+    }
+
+    .registration-container .member-leader {
+        padding: 8px 0;
+    }
+
     .registration-container .info-form .declaration-box {
         height: 200px;
         border: 1px solid #ebeef5;
@@ -400,6 +505,15 @@
         font-size: 2rem;
         color: #67C23A;
         margin-right: 1rem;
+    }
+
+    .registration-container .member-preview {
+        margin-top: 16px;
+    }
+
+    .registration-container .member-preview-title {
+        font-weight: 600;
+        margin-bottom: 8px;
     }
 
     .registration-container .action-buttons {

@@ -20,13 +20,13 @@
                 stripe
                 style="width: 100%">
             <el-table-column property="id" label="编号" width="80" />
-            <el-table-column property="title" label="名称" width="220" />
+            <el-table-column property="title" label="名称" width="200" />
             <el-table-column property="competition" label="竞赛" width="220" />
-            <el-table-column property="level" label="等级" width="100" />
+            <el-table-column property="level" label="等级" width="80" />
             <el-table-column property="published" label="是否颁发" width="90" />
-            <el-table-column property="organization" label="组委会" width="220" />
+            <el-table-column property="organization" label="组委会" width="200" />
             <el-table-column property="date" label="日期" width="130" />
-            <el-table-column label="操作">
+            <el-table-column label="操作" width="160">
                 <template slot-scope="scope">
                     <el-button
                             size="mini"
