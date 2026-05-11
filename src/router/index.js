@@ -129,4 +129,24 @@ const router = new VueRouter({
   routes
 })
 
+const publicPaths = ['/login', '/register']
+
+router.beforeEach((to, from, next) => {
+  const token = window.localStorage.getItem('token')
+  if (publicPaths.indexOf(to.path) >= 0) {
+    next()
+    return
+  }
+  if (!token) {
+    const target = to.fullPath || to.path
+    sessionStorage.setItem(
+      'AUTH_GUARD_MESSAGE',
+      '您尚未登录，无法访问「' + (to.meta && to.meta.title ? to.meta.title : to.name || target) + '」。请先登录后再操作。'
+    )
+    next({ path: '/login' })
+    return
+  }
+  next()
+})
+
 export default router

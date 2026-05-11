@@ -109,7 +109,13 @@
         created() {
             const _this = this
             axios.get('http://localhost:8181/notice/load').then((response) => {
-                _this.notices = response.data
+                const rows = response.data || []
+                rows.sort((a, b) => {
+                    const byDate = (b.date || '').localeCompare(a.date || '')
+                    if (byDate !== 0) return byDate
+                    return (b.id || 0) - (a.id || 0)
+                })
+                _this.notices = rows
             });
             axios.get('http://localhost:8181/competition/load').then(function (response) {
                 _this.competitions = response.data

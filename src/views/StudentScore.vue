@@ -138,7 +138,9 @@
                         this.$alert('证书下载成功！', '', {
                             confirmButtonText: '确定',
                             callback: action => {
-                                location.href = 'http://localhost:8181/certificate/download'
+                                const tok = window.localStorage.getItem('token') || ''
+                                const q = tok ? ('?accessToken=' + encodeURIComponent(tok)) : ''
+                                location.href = 'http://localhost:8181/certificate/download' + q
                             }
                         });
                     } catch (error) {

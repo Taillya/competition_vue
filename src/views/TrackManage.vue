@@ -1,5 +1,5 @@
 <template>
-    <div style="margin-top: 60px;margin-left:80px;border: 0px solid red;" >
+    <div>
         <div class="track-toolbar-wrap">
             <el-form :inline="true" label-width="84px" class="track-toolbar-form">
                 <el-form-item label="关键字">

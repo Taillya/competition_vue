@@ -50,7 +50,7 @@
               class="menu-item"
               style="position: relative"
       >
-        DeepSeek助手
+        竞赛助手
         <span class="hot-tag">hot</span>
       </div>
     </div>
@@ -104,6 +104,7 @@
           type: 'warning'
         }).then(function () {
           localStorage.removeItem('user')
+          localStorage.removeItem('token')
           _this.$router.replace({path: '/login'})
         })
       }

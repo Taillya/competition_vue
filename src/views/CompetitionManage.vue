@@ -1,57 +1,68 @@
 <template>
-    <div style="margin-top: 60px;margin-left:80px;border: 0px solid red;" >
-        <el-form label-width="100px" class="demo-ruleForm">
-            <el-form-item label="关键字：" prop="keyWord">
-                <el-input clearable v-model="keyWord" placeholder="请输入关键字" style="width: 230px;float: left"></el-input>
-                <span style="margin-left: 60px">条件查询：</span>
-                <el-select v-model="type">
-                    <el-option label="名称" value="title" />
-                </el-select>
-                <el-button type="primary" icon="el-icon-search" style="position: relative;left: 30px;" @click="search()">搜索</el-button>
-                <el-button type="success" icon="el-icon-plus" style="position: relative;left: 60px;" @click="add()">添加竞赛</el-button>
-            </el-form-item>
-        </el-form>
+    <div class="admin-page">
+        <el-card shadow="never" class="toolbar-card">
+            <el-form label-width="72px" class="toolbar-form" inline @submit.native.prevent>
+                <el-form-item label="关键字">
+                    <el-input clearable v-model="keyWord" placeholder="竞赛名称" class="toolbar-input"/>
+                </el-form-item>
+                <el-form-item label="条件">
+                    <el-select v-model="type" placeholder="查询字段" class="toolbar-select">
+                        <el-option label="名称" value="title"/>
+                    </el-select>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" icon="el-icon-search" @click="search()">搜索</el-button>
+                    <el-button type="success" icon="el-icon-plus" plain @click="add()">添加竞赛</el-button>
+                </el-form-item>
+            </el-form>
+        </el-card>
 
         <el-table
                 :data="tableData"
                 border
                 stripe
+                class="admin-table"
                 style="width: 100%">
-            <el-table-column property="id" label="编号" width="80" />
-            <el-table-column property="title" label="名称" width="220" />
-            <el-table-column property="type" label="类型" width="150" />
-            <el-table-column property="time" label="时间" width="160" />
-            <el-table-column property="status" label="状态" width="130" />
-            <el-table-column label="开放报名" width="90">
+            <el-table-column property="id" label="编号" width="72" align="center"/>
+            <el-table-column property="title" label="名称" min-width="200" show-overflow-tooltip/>
+            <el-table-column label="类型" width="118" align="center">
                 <template slot-scope="scope">
-                    <span>{{ Number(scope.row.registrationEnabled) === 1 ? '是' : '否' }}</span>
+                    <el-tag size="small" :type="typeTagType(scope.row.type)" effect="plain">{{ scope.row.type }}</el-tag>
                 </template>
             </el-table-column>
-            <el-table-column label="报名入口" width="110">
+            <el-table-column property="time" label="时间" width="118"/>
+            <el-table-column label="状态" width="112" align="center">
                 <template slot-scope="scope">
-                    <span>{{ entryModeText(scope.row.registrationEntryMode) }}</span>
+                    <el-tag size="small" :type="statusTagType(scope.row.status)">{{ scope.row.status }}</el-tag>
                 </template>
             </el-table-column>
-            <el-table-column label="报名阶段" width="120">
+            <el-table-column label="开放报名" width="96" align="center">
                 <template slot-scope="scope">
-                    <span>{{ phaseText(scope.row.registrationPhase) }}</span>
+                    <el-tag size="mini" :type="Number(scope.row.registrationEnabled) === 1 ? 'success' : 'info'">
+                        {{ Number(scope.row.registrationEnabled) === 1 ? '是' : '否' }}
+                    </el-tag>
                 </template>
             </el-table-column>
-            <el-table-column property="participants" label="已通过(支)" width="100" />
-            <el-table-column property="awards" label="奖项" width="130" />
-            <el-table-column label="操作" width="160">
-                <template slot-scope="scope" >
-                    <el-button
-                            size="mini"
-                            @click="edit(scope.row)">编辑</el-button>
-                    <el-button
-                            size="mini"
-                            type="danger"
-                            @click="del(scope.row)">删除</el-button>
+            <el-table-column label="报名入口" width="108" align="center">
+                <template slot-scope="scope">
+                    <el-tag size="mini" type="info" effect="plain">{{ entryModeText(scope.row.registrationEntryMode) }}</el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column label="报名阶段" width="108" align="center">
+                <template slot-scope="scope">
+                    <el-tag size="mini" :type="phaseTagType(scope.row.registrationPhase)">{{ phaseText(scope.row.registrationPhase) }}</el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column property="participants" label="已通过" width="88" align="center"/>
+            <el-table-column property="awards" label="奖项" min-width="120" show-overflow-tooltip/>
+            <el-table-column label="操作" width="148" fixed="right" align="center">
+                <template slot-scope="scope">
+                    <el-button type="text" size="small" class="btn-edit" @click="edit(scope.row)">编辑</el-button>
+                    <el-button type="text" size="small" class="btn-del" @click="del(scope.row)">删除</el-button>
                 </template>
             </el-table-column>
         </el-table>
-        <el-pagination style="margin-top: 20px;float: right"
+        <el-pagination class="admin-pagination"
                        background
                        layout="total, sizes, prev, pager, next, jumper"
                        :page-sizes="[5, 10, 20, 50]"
@@ -200,6 +211,32 @@
                 }
                 return map[p] || '-'
             },
+            typeTagType(typeLabel) {
+                const m = {
+                    '科技创新': '',
+                    '学术论文': 'warning',
+                    '创业计划': 'danger'
+                }
+                return m[typeLabel] != null ? m[typeLabel] : 'info'
+            },
+            statusTagType(statusLabel) {
+                const m = {
+                    '进行中': 'success',
+                    '即将开始': 'warning',
+                    '已结束': 'info',
+                    '已颁奖': ''
+                }
+                return m[statusLabel] != null ? m[statusLabel] : 'info'
+            },
+            phaseTagType(p) {
+                const m = {
+                    DISABLED: 'danger',
+                    NOT_STARTED: 'warning',
+                    ENDED: 'info',
+                    OPEN: 'success'
+                }
+                return m[p] || 'info'
+            },
             handleSizeChange(val) {
                 this.pageSize = val
                 this.currentPage = 1
@@ -299,5 +336,53 @@
 </script>
 
 <style scoped>
+.admin-page {
+    margin: 0;
+}
 
+.toolbar-card {
+    margin-bottom: 18px;
+    border-radius: 10px;
+    border: 1px solid #e8eef4;
+    background: linear-gradient(180deg, #fafdff 0%, #ffffff 100%);
+}
+
+.toolbar-card ::v-deep .el-card__body {
+    padding: 14px 18px 6px;
+}
+
+.toolbar-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+.toolbar-input {
+    width: 220px;
+}
+
+.toolbar-select {
+    width: 130px;
+}
+
+.admin-table {
+    margin-top: 4px;
+}
+
+.admin-pagination {
+    margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-edit {
+    color: #0284c7 !important;
+    font-weight: 500;
+}
+
+.btn-del {
+    color: #dc2626 !important;
+    font-weight: 500;
+}
 </style>

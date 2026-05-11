@@ -43,7 +43,13 @@
         created() {
             const _this = this
             axios.get('http://localhost:8181/notice/list').then((response) => {
-                _this.tableData = response.data;
+                const rows = response.data || []
+                rows.sort((a, b) => {
+                    const byDate = (b.date || '').localeCompare(a.date || '')
+                    if (byDate !== 0) return byDate
+                    return (b.id || 0) - (a.id || 0)
+                })
+                _this.tableData = rows
             });
         }
     };

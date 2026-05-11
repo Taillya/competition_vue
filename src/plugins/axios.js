@@ -18,7 +18,11 @@ const _axios = axios.create(config);
 
 _axios.interceptors.request.use(
   function(config) {
-    // Do something before request is sent
+    const token = window.localStorage.getItem('token');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = 'Bearer ' + token;
+    }
     return config;
   },
   function(error) {
@@ -30,11 +34,23 @@ _axios.interceptors.request.use(
 // Add a response interceptor
 _axios.interceptors.response.use(
   function(response) {
-    // Do something with response data
     return response;
   },
   function(error) {
-    // Do something with response error
+    const status = error.response && error.response.status;
+    if (status === 401 || status === 403) {
+      window.localStorage.removeItem('token');
+      window.localStorage.removeItem('user');
+      const path = window.location.pathname || '';
+      if (path !== '/login' && path !== '/register') {
+        if (status === 401) {
+          sessionStorage.setItem('AUTH_GUARD_MESSAGE', '登录状态已失效或令牌无效，请重新登录后再访问。');
+        } else {
+          sessionStorage.setItem('AUTH_GUARD_MESSAGE', '当前账号无权执行该操作，请使用具备相应权限的账号登录。');
+        }
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
   }
 );

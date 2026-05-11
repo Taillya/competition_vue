@@ -1,6 +1,12 @@
 <template>
-    <div style="margin-top: 60px;margin-left:80px;border: 0px solid red;" >
-        <el-button type="success" icon="el-icon-plus" style="position: relative;top: -20px;" @click="add()">添加标签</el-button>
+    <div>
+        <el-form label-width="100px" class="demo-ruleForm tag-manage-form">
+            <el-form-item label=" ">
+                <div class="tag-toolbar-actions">
+                    <el-button type="success" icon="el-icon-plus" @click="add()">添加标签</el-button>
+                </div>
+            </el-form-item>
+        </el-form>
         <el-table
                 :data="tableData"
                 border
@@ -161,5 +167,15 @@
 </script>
 
 <style scoped>
+    .tag-manage-form ::v-deep .el-form-item {
+        margin-bottom: 18px;
+    }
 
+    .tag-toolbar-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
 </style>

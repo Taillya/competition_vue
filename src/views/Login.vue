@@ -26,16 +26,19 @@
                     ></el-input>
                 </el-form-item>
 
-                <el-form-item>
+                <el-form-item class="login-role-row">
                     <el-radio v-model="ruleForm.type" label="admin" border>管理员</el-radio>
                     <el-radio v-model="ruleForm.type" label="student" border>学生</el-radio>
                 </el-form-item>
 
-                <el-form-item style="width:100%;">
-                    <el-button type="primary" style="width:80%;" @click="handleSubmit" :loading="logining">登录</el-button>
+                <el-form-item class="login-submit-wrap">
+                    <el-button type="primary" class="login-submit-btn" @click="handleSubmit" :loading="logining">登录</el-button>
                 </el-form-item>
-                <el-form-item style="margin-top: -10px; text-align: center;">
-                    <el-button type="text" @click="$router.push('/register')">没有账号？去注册</el-button>
+                <el-form-item class="register-link-wrap">
+                    <span class="register-line">
+                        <span class="register-hint">没有账号？</span>
+                        <router-link to="/register" class="register-link">学生注册</router-link>
+                    </span>
                 </el-form-item>
             </el-form>
         </div>
@@ -74,11 +77,18 @@
                                     confirmButtonText: '确定'
                                 })
                             } else {
+                                const payload = response.data.data;
+                                const token = payload.token;
+                                const user = payload.user;
+                                if (!token || !user) {
+                                    _this.$alert('登录返回数据异常', '提示', { confirmButtonText: '确定' });
+                                    return;
+                                }
+                                localStorage.setItem('token', token);
+                                localStorage.setItem('user', JSON.stringify(user));
                                 if (_this.ruleForm.type == 'admin') {
-                                    localStorage.setItem('user', JSON.stringify(response.data.data));
                                     _this.$router.replace({path: '/adminIndex'})
                                 } else {
-                                    localStorage.setItem('user', JSON.stringify(response.data.data));
                                     _this.$router.replace({path: '/studentIndex'})
                                 }
                             }
@@ -91,6 +101,14 @@
             }
         },
         mounted() {
+            const guardMsg = sessionStorage.getItem('AUTH_GUARD_MESSAGE')
+            if (guardMsg) {
+                sessionStorage.removeItem('AUTH_GUARD_MESSAGE')
+                this.$alert(guardMsg, '访问提示', {
+                    confirmButtonText: '我知道了',
+                    type: 'warning'
+                })
+            }
             const prefillUsername = localStorage.getItem('prefillStudentUsername')
             if (prefillUsername) {
                 this.ruleForm.username = prefillUsername
@@ -123,7 +141,7 @@
         padding: 20px;
         /* 添加动画效果 */
         animation: fadeInUp 1s ease both;
-        margin-top: -30px;
+        margin-top: 0;
     }
 
     /* 定义鼠标悬停效果 */
@@ -143,16 +161,18 @@
         }
     }
     .login-container {
+        box-sizing: border-box;
         width: 100%;
-        height: 733px;
+        min-height: 100vh;
         background-image: url('../assets/image/background.png');
-        background-size: cover;
+        background-repeat: no-repeat;
         background-position: center;
+        background-size: cover;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        margin-top: -50px;
+        padding: 24px 16px;
     }
 
     .login-wrapper {
@@ -191,22 +211,58 @@
         font-size: 16px;
     }
 
-    .el-radio {
-        margin-right: 20px;
+    .login-role-row ::v-deep .el-form-item__content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-left: 0 !important;
+    }
+
+    .login-role-row ::v-deep .el-radio {
+        margin-right: 0;
         font-size: 14px;
     }
 
-    .el-button {
-        width: 100%;
+    .login-submit-wrap {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+
+    .login-submit-btn {
+        width: 80%;
         height: 40px;
         border-radius: 8px;
         font-size: 16px;
-        background-color: #409eff;
-        border-color: #409eff;
-        transition: background-color 0.3s ease;
     }
 
-    .el-button:hover {
-        background-color: #66b1ff;
+    .register-link-wrap {
+        margin-top: 0;
+        margin-bottom: 0;
+        text-align: center;
+    }
+
+    .register-line {
+        display: inline-block;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .register-hint {
+        color: #909399;
+    }
+
+    .register-link {
+        display: inline-block;
+        font-size: 13px;
+        color: #409eff;
+        text-decoration: none;
+        line-height: 1.5;
+    }
+
+    .register-link:hover {
+        color: #66b1ff;
+        text-decoration: underline;
     }
 </style>

@@ -1,5 +1,5 @@
 <template>
-    <div style="margin-top: 60px;margin-left:80px;border: 0px solid red;" >
+    <div>
         <el-form label-width="100px" class="demo-ruleForm">
             <el-form-item label="关键字：" prop="keyWord">
                 <el-input clearable v-model="keyWord" placeholder="请输入关键字" style="width: 230px;float: left"></el-input>

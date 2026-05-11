@@ -4,7 +4,8 @@
         <div class="chat-container">
 
             <!-- 标题测试 -->
-            <h1 class="chat-title">Spring AI+DeepSeek 智能助手</h1>
+            <h1 class="chat-title">竞赛智能助手</h1>
+            <p class="chat-subtitle">对话会保存在本浏览器（按登录账号区分）；离开页面再回来仍会保留，除非点击「清空」或换成另一个账号登录。事实块中的内部编号已对展示脱敏。以下为 Markdown 排版。</p>
             <!-- 聊天消息区域 -->
             <div class="messages" ref="messagesContainer">
                 <!-- 遍历消息列表，渲染每条消息 -->
@@ -20,10 +21,12 @@
                             <div class="message-text">
                                 <!-- 显示用户消息 -->
                                 <div v-if="message.type === 'user'"><div class="text">{{ message.text }}</div></div>
-                                <!-- 显示AI消息 -->
-                                <span style="float: left" v-for="(value, valueIndex) in message.value" :key="valueIndex">
-                                    {{ value }}
-                                </span>
+                                <!-- AI：流式拼接后以 Markdown 样式渲染 -->
+                                <div
+                                        v-if="message.type === 'ai'"
+                                        class="ai-rich"
+                                        v-html="formatAiHtml(message.display || '')"
+                                />
                             </div>
                             <!-- 显示消息的时间戳 -->
                             <div class="timestamp">{{ message.timestamp }}</div>
@@ -41,6 +44,9 @@
                         @keyup.enter="sendMessage"
                         class="input-field"
                 />
+                <button type="button" @click="clearChatHistory" class="clear-button" title="清空本地保存的对话">
+                    清空
+                </button>
                 <button @click="sendMessage" :disabled="!inputMessage" class="send-button">
                     <span>发送</span>
                 </button>
@@ -65,48 +71,65 @@
         methods:{
             // 发送消息的方法
             sendMessage(){
-                if (!this.inputMessage.trim()) return;
-                // 添加用户消息到消息列表
-                this.addUserMessage();
-                // 触发 AI 回复
-                this.AIResponse();
-                // 清空输入框
+                const text = this.inputMessage.trim();
+                if (!text) return;
+                this.addUserMessage(text);
                 this.inputMessage = '';
+                this.AIResponse(text);
             },
-            addUserMessage(){
+            addUserMessage(text){
                 this.messages.push({
                     type: 'user',
-                    text: this.inputMessage,
+                    text: text,
                     timestamp: currentTime(),
-                    value: []
                 })
             },
-            AIResponse(){
+            AIResponse(userText){
                 const aiMessage = {
                     type: 'ai',
-                    text: '',
+                    display: '',
                     timestamp: currentTime(),
-                    value: []
                 };
-                // 添加 AI 消息到消息列表
                 this.messages.push(aiMessage);
-                // 滚动到消息列表底部
                 this.scrollToBottom();
-                // 创建 SSE 连接
-                this.createEventSource(aiMessage);
+                this.createEventSource(aiMessage, userText);
             },
-            // 创建 SSE 连接
-            createEventSource(aiMessage) {
-                this.eventSource = new EventSource(`http://localhost:8181/chat?message=${this.inputMessage}`);
+            createEventSource(aiMessage, userText) {
+                if (this.eventSource) {
+                    this.eventSource.close();
+                    this.eventSource = null;
+                }
+                let url = 'http://localhost:8181/chat?message=' + encodeURIComponent(userText);
+                try {
+                    const u = JSON.parse(window.localStorage.getItem('user') || '{}');
+                    if (u && u.username) {
+                        url += '&submitterUserId=' + encodeURIComponent(u.username);
+                    }
+                    const tok = window.localStorage.getItem('token');
+                    if (tok) {
+                        url += '&accessToken=' + encodeURIComponent(tok);
+                    }
+                } catch (e) { /* ignore */ }
+                this.eventSource = new EventSource(url);
+                let closed = false;
                 // 监听消息事件
                 this.eventSource.onmessage = (event) => {
                     if(event.data !== '<think>' && event.data !== '</think>'){
-                        aiMessage.value.push(event.data)
+                        const next = (aiMessage.display || '') + event.data;
+                        this.$set(aiMessage, 'display', next);
                     }
                 };
-                // 错误处理
-                this.eventSource.onerror = (error) => {
-                    this.eventSource.close();
+                // 错误处理（流正常结束部分浏览器也会触发 onerror，仅在仍无内容时提示）
+                this.eventSource.onerror = () => {
+                    if (this.eventSource && !closed) {
+                        closed = true;
+                        if (!aiMessage.display || aiMessage.display.length === 0) {
+                            this.$set(aiMessage, 'display',
+                                '未收到回复内容。请确认：1）后端 8181 与 Ollama（默认 11434）已启动；2）模型已下载（与 application.yml 中 spring.ai.ollama.chat.options.model 一致）；3）浏览器控制台是否有跨域或网络错误。');
+                        }
+                        this.eventSource.close();
+                        this.eventSource = null;
+                    }
                 };
             },
             // 滚动到消息列表底部
@@ -115,6 +138,67 @@
                     const container = this.$refs.messagesContainer;
                     container.scrollTop = container.scrollHeight;
                 });
+            },
+            /** 轻量 Markdown：换行、## 标题、**加粗**（内容来自模型，已 HTML 转义） */
+            formatAiHtml(raw) {
+                if (!raw) {
+                    return "";
+                }
+                let s = String(raw)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+                s = s.replace(/^##\s+(.+)$/gm, "<h3 class=\"ai-md-h3\">$1</h3>");
+                s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+                s = s.replace(/\n/g, "<br>");
+                return s;
+            },
+            /** 与 localStorage 中 user 绑定的 key，换账号会换 key，互不影响 */
+            chatStorageKey() {
+                try {
+                    const u = JSON.parse(window.localStorage.getItem('user') || '{}');
+                    return 'competition_ai_chat_v1_' + (u && u.username ? u.username : 'guest');
+                } catch (e) {
+                    return 'competition_ai_chat_v1_guest';
+                }
+            },
+            schedulePersistChat() {
+                if (this._persistTimer) {
+                    clearTimeout(this._persistTimer);
+                }
+                this._persistTimer = setTimeout(() => {
+                    this._persistTimer = null;
+                    this.persistChatHistory();
+                }, 400);
+            },
+            persistChatHistory() {
+                try {
+                    const u = JSON.parse(window.localStorage.getItem('user') || '{}');
+                    const payload = {
+                        username: u && u.username ? u.username : null,
+                        messages: this.messages
+                    };
+                    localStorage.setItem(this.chatStorageKey(), JSON.stringify(payload));
+                } catch (e) { /* ignore */ }
+            },
+            restoreChatHistory() {
+                try {
+                    const raw = localStorage.getItem(this.chatStorageKey());
+                    if (!raw) return;
+                    const data = JSON.parse(raw);
+                    if (!data || !Array.isArray(data.messages) || data.messages.length === 0) return;
+                    const u = JSON.parse(window.localStorage.getItem('user') || '{}');
+                    const uname = u && u.username ? u.username : null;
+                    if (data.username !== uname) return;
+                    this.messages = data.messages;
+                    this.$nextTick(() => this.scrollToBottom());
+                } catch (e) { /* ignore */ }
+            },
+            clearChatHistory() {
+                this.messages = [];
+                try {
+                    localStorage.removeItem(this.chatStorageKey());
+                } catch (e) { /* ignore */ }
             }
         },
         watch: {
@@ -122,6 +206,7 @@
             messages: {
                 handler() {
                     this.scrollToBottom();
+                    this.schedulePersistChat();
                 },
                 deep: true
             }
@@ -133,8 +218,23 @@
         data(){
             return{
                 inputMessage:'',
-                messages:[]
+                messages:[],
+                eventSource: null,
+                _persistTimer: null
             }
+        },
+        mounted() {
+            this.restoreChatHistory();
+        },
+        beforeDestroy() {
+            if (this.eventSource) {
+                this.eventSource.close();
+                this.eventSource = null;
+            }
+            if (this._persistTimer) {
+                clearTimeout(this._persistTimer);
+            }
+            this.persistChatHistory();
         }
     }
 
@@ -163,10 +263,21 @@
         font-size: 22px;
         font-weight: bold;
         color: #007bff;
-        padding: 15px 0;
+        padding: 15px 0 8px;
         border-bottom: 1px solid #e0e0e0;
         margin: 0;
         background-color: #f9f9f9;
+    }
+
+    .chat-subtitle {
+        text-align: center;
+        font-size: 13px;
+        color: #606266;
+        margin: 0;
+        padding: 0 16px 12px;
+        background-color: #f9f9f9;
+        border-bottom: 1px solid #e0e0e0;
+        line-height: 1.5;
     }
 
     /* 聊天容器样式 */
@@ -281,6 +392,27 @@
         margin-bottom: 8px; /* 给时间戳留出一些空间 */
     }
 
+    /* AI Markdown 渲染（scoped 穿透） */
+    .ai-rich >>> .ai-md-h3 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 10px 0 6px;
+        color: #303133;
+        line-height: 1.4;
+    }
+
+    .ai-rich >>> strong {
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .ai-rich {
+        text-align: left;
+        line-height: 1.65;
+        word-break: break-word;
+        white-space: normal;
+    }
+
     /* 时间戳样式 */
     .timestamp {
         font-size: 0.8em;
@@ -329,6 +461,23 @@
 
     .send-button:hover {
         background: #0056b3;
+    }
+
+    .clear-button {
+        padding: 12px 14px;
+        margin-right: 8px;
+        background: #fff;
+        color: #606266;
+        border: 1px solid #dcdfe6;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: border-color 0.2s, color 0.2s;
+        white-space: nowrap;
+    }
+
+    .clear-button:hover {
+        border-color: #409eff;
+        color: #409eff;
     }
 
     .send-button:disabled {
