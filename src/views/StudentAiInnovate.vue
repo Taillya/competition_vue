@@ -48,8 +48,10 @@
                             :class="{ active: formData.trackId === track.id }"
                             @click="selectTrack(track.id,track.name)"
                     >
-                        <i class="track-icon" style="margin-left: -276px" :class="track.icon"></i>
-                        <h3 style="text-align: left;">{{ track.name }}</h3>
+                        <div class="track-icon-wrap">
+                            <i class="track-icon" :class="track.icon"></i>
+                        </div>
+                        <h3 class="track-card-title">{{ track.name }}</h3>
                         <p class="description">{{ track.description }}</p>
                         <div class="badges">
                             <el-tag
@@ -252,7 +254,7 @@
                     signature: [{ required: true, message: '请输入电子签名' }]
                 },
                 headerStyle: {
-                    backgroundImage: `linear-gradient(45deg, #409EFF, #36a1f8)`
+                    backgroundColor: '#409eff'
                 },
                 tagTypes: ['', 'success', 'warning', 'danger', 'info'],
                 provinceOptions: PROVINCES
@@ -518,11 +520,14 @@
     }
 
     .registration-container .progress-steps {
-        margin: 2rem 0;
+        margin: 2rem auto;
         padding: 20px;
         background: white;
         border-radius: 15px;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        max-width: 960px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     /* Vue 2 兼容的深度选择器 */
@@ -536,6 +541,11 @@
         border-radius: 15px;
         padding: 2rem;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        max-width: 960px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        box-sizing: border-box;
     }
 
     .registration-container .track-selection {
@@ -550,34 +560,55 @@
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
     }
 
     .registration-container .track-selection .track-card:hover {
         transform: translateY(-5px);
-        border-color: #409EFF;
+        border-color: rgba(37, 99, 235, 0.55);
     }
 
     .registration-container .track-selection .track-card.active {
-        border-color: #409EFF;
-        background: rgba(64, 158, 255, 0.05);
+        border-color: #2563eb;
+        background: rgba(239, 246, 255, 0.65);
+    }
+
+    .registration-container .track-selection .track-card .track-icon-wrap {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        background: linear-gradient(145deg, #dbeafe 0%, #eff6ff 100%);
+        border: 1px solid rgba(147, 197, 253, 0.65);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
     }
 
     .registration-container .track-selection .track-card .track-icon {
-        font-size: 2.5rem;
-        color: #409EFF;
-        margin-bottom: 1rem;
+        font-size: 1.65rem;
+        color: #2563eb;
+        margin: 0;
+        line-height: 1;
     }
 
-    .registration-container .track-selection .track-card h3 {
-        color: #303133;
+    .registration-container .track-selection .track-card .track-card-title {
+        color: #1e293b;
         margin: 0.5rem 0;
+        text-align: center;
+        font-size: 1.05rem;
+        font-weight: 600;
     }
 
     .registration-container .track-selection .track-card .description {
-        color: #606266;
+        color: #64748b;
         font-size: 0.9rem;
         min-height: 60px;
-        text-align: left;
+        text-align: center;
     }
 
     .registration-container .track-selection .track-card .badges {
@@ -585,6 +616,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
+        justify-content: center;
     }
 
     .registration-container .member-list {

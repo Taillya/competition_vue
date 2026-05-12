@@ -54,54 +54,79 @@
 </script>
 
 <style scoped>
+  /* 与顶栏主色一致（AI 助手标题同款蓝），按钮区整体居中 */
   .bottom {
     width: 100%;
-    height: 300px;
+    min-height: 220px;
     display: flex;
     justify-content: center;
-    background-color: #33ffff; /* 浅蓝色背景 */
     align-items: center;
-    font-family: '黑体';
-    border-radius: 10px;
+    background: #2563eb;
+    font-family: '黑体', 'Microsoft YaHei', sans-serif;
+    border-radius: 12px;
     margin-top: 20px;
+    padding: 28px 16px;
+    box-sizing: border-box;
+    box-shadow: 0 10px 28px rgba(37, 99, 235, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
+
   .bottom1 {
-    width: 80%;
-    height: 100%;
+    width: 100%;
+    max-width: 920px;
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around;
-    align-items: center;
+    justify-content: center;
+    align-content: center;
+    align-items: stretch;
+    gap: 14px 16px;
   }
+
   .bottom2 {
-    width: 30%;
-    height: 80px;
-    background-color: #fff9c4; /* 浅黄色背景 */
+    flex: 1 1 240px;
+    max-width: 280px;
+    min-height: 80px;
+    background-color: rgba(255, 255, 255, 0.96);
     border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    font-size: 20px;
-    color: #333; /* 深色文字 */
+    font-size: 18px;
+    color: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
+
   .bottom3 {
-    width: 30%;
-    height: 80px;
-    background-color: #c8e6c9; /* 浅绿色背景 */
+    flex: 1 1 240px;
+    max-width: 280px;
+    min-height: 80px;
+    background-color: rgba(255, 255, 255, 0.96);
     border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    font-size: 20px;
-    color: #333; /* 深色文字 */
+    font-size: 18px;
+    color: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
+
+  .bottom2:hover,
+  .bottom3:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
+  }
+
   .bottom11 {
-    margin-top: 30px;
-    height: 40px;
+    margin-top: 24px;
+    min-height: 40px;
     text-align: center;
-    font-size: 20px;
-    color: #333; /* 深色文字 */
+    font-size: 15px;
+    color: #64748b;
   }
 </style>

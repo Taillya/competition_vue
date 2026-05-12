@@ -1,6 +1,6 @@
 <template>
-  <div class="header" style="margin-bottom: 10px">
-    <img style="width:90px" src="../assets/image/logo.png">
+  <div class="header">
+    <img class="header-logo" src="../assets/image/logo.png" alt="logo">
     <div class="header1">
       <div
               @click="toPage('studentIndex')"
@@ -31,13 +31,6 @@
         成绩与证书
       </div>
       <div
-              @click="toPage('studentRegistrations')"
-              :class="{'active': this.$route.path === '/studentRegistrations'}"
-              class="menu-item"
-      >
-        我的报名
-      </div>
-      <div
               @click="toPage('studentNotice')"
               :class="{'active': this.$route.path === '/studentNotice'}"
               class="menu-item"
@@ -47,11 +40,20 @@
       <div
               @click="toPage('chat')"
               :class="{'active': this.$route.path === '/chat'}"
-              class="menu-item"
-              style="position: relative"
+              class="menu-item menu-item-assistant"
+              title="可询问赛程规则、报名流程与常见问题，回答仅供参考"
       >
-        竞赛助手
-        <span class="hot-tag">hot</span>
+        <span class="assistant-wrap">
+          <span class="assistant-text">智能助手</span>
+          <span class="hot-tag" aria-hidden="true">AI</span>
+        </span>
+      </div>
+      <div
+              @click="toPage('studentRegistrations')"
+              :class="{'active': this.$route.path === '/studentRegistrations'}"
+              class="menu-item"
+      >
+        我的报名
       </div>
     </div>
     <div class="header2">
@@ -124,54 +126,113 @@
 
   .header {
     width: 100%;
-    height: 80px;
-    margin-top: -50px;
+    min-height: 80px;
+    /* 与首页等学生页顶栏对齐，不额外下移 */
+    margin-top: 0;
+    margin-bottom: 10px;
+    overflow: visible;
     display: flex;
     align-items: center;
     justify-content: space-around;
-    background-color: white; /* 修改背景颜色为白色 */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 添加阴影效果，增加层次感 */
-    padding: 0 20px; /* 添加内边距，使内容不紧贴边缘 */
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.08);
+    /* 略增上内边距，避免「AI」角标贴顶或被外层裁切 */
+    padding: 14px 20px 10px;
     box-sizing: border-box;
+    border-bottom: 1px solid rgba(147, 197, 253, 0.45);
+  }
+
+  .header-logo {
+    width: 90px;
+    flex-shrink: 0;
+    height: auto;
+    display: block;
   }
 
   .header1 {
     display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    /* 不可使用 overflow-x: auto：按规范会连带把 overflow-y 算成 auto，向上溢出的「AI」角标会被裁切 */
+    overflow: visible;
     color: #333; /* 修改文字颜色为深色，与白色背景形成对比 */
   }
 
   .active {
-    color: #FEA501; /* 修改激活状态的颜色，使其与未激活状态区分明显 */
-    border-bottom: 2px solid #FEA501; /* 添加底部边框，突出激活状态 */
-    transition: border-bottom 0.3s ease; /* 添加过渡效果，使变化更平滑 */
+    color: #2563eb;
+    border-bottom: 2px solid #3b82f6;
+    transition: border-bottom 0.3s ease, color 0.3s ease;
   }
 
   .menu-item {
     font-size: 18px; /* 增大字体大小，提高可读性 */
     margin-left: 30px;
     cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
     transition: color 0.3s ease; /* 添加过渡效果，使颜色变化更平滑 */
   }
 
   .menu-item:hover {
-    color: #FEA501; /* 鼠标悬停时改变颜色，增强交互性 */
+    color: #1d4ed8;
+  }
+
+  .menu-item-assistant {
+    color: #2563eb;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    overflow: visible;
+  }
+
+  /* 仅包住「智能助手」四字；右侧留白承载角标，避免绝对定位伸到「我的报名」上方 */
+  .assistant-wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 1.25;
+    padding-right: 28px;
+    padding-top: 2px;
+    overflow: visible;
+  }
+
+  .assistant-text {
+    white-space: nowrap;
+    font-size: 18px;
+  }
+
+  .menu-item-assistant:hover {
+    color: #1d4ed8;
+  }
+
+  .menu-item-assistant.active {
+    color: #2563eb;
   }
 
   .hot-tag {
     position: absolute;
-    top: -5px;
-    right: -27px;
-    background-color: red;
+    top: -6px;
+    right: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: #2563eb;
     color: white;
-    font-size: 12px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transform: scale(0.8);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px 2px;
+    border-radius: 5px;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+    line-height: 1.15;
+    box-shadow: 0 1px 3px rgba(30, 64, 175, 0.35);
   }
 
   .header2 {
     display: flex;
     gap: 20px; /* 添加间距，使两个按钮之间有适当的间隔 */
+    flex-shrink: 0;
+    align-items: center;
   }
 
   .header3 {
@@ -190,14 +251,17 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #FEA501;
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
     border-radius: 10px;
     cursor: pointer;
     color: white;
-    transition: background-color 0.3s ease; /* 添加过渡效果，使颜色变化更平滑 */
+    font-weight: 500;
+    transition: opacity 0.25s ease, transform 0.2s ease;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.32);
   }
 
   .header4:hover {
-    background-color: #ffb429; /* 鼠标悬停时改变背景颜色，增强交互性 */
+    opacity: 0.94;
+    transform: translateY(-1px);
   }
 </style>

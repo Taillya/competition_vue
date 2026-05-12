@@ -4,8 +4,8 @@
         <div class="chat-container">
 
             <!-- 标题测试 -->
-            <h1 class="chat-title">竞赛智能助手</h1>
-            <p class="chat-subtitle">对话会保存在本浏览器（按登录账号区分）；离开页面再回来仍会保留，除非点击「清空」或换成另一个账号登录。事实块中的内部编号已对展示脱敏。以下为 Markdown 排版。</p>
+            <h1 class="chat-title">AI 赛事助手</h1>
+            <p class="chat-subtitle">问我竞赛日程、报名步骤、材料要求等都可以。对话会保存在本浏览器（按登录账号区分），离开页面后仍会保留，除非点「清空」或更换账号。事实类内容已做脱敏展示，回答仅供参考，重要事项请以学校与组委会通知为准。</p>
             <!-- 聊天消息区域 -->
             <div class="messages" ref="messagesContainer">
                 <!-- 遍历消息列表，渲染每条消息 -->
@@ -40,7 +40,7 @@
                 <input
                         v-model="inputMessage"
                         type="text"
-                        placeholder="输入你的问题..."
+                        placeholder="例如：某竞赛的报名时间、需要提交哪些材料、赛道有什么区别…"
                         @keyup.enter="sendMessage"
                         class="input-field"
                 />
@@ -358,7 +358,7 @@
 
     /* AI 头像样式 */
     .ai-avatar {
-        background: #9ACD32; /* 将 AI 头像颜色设置为绿色 */
+        background: #2563eb;
     }
 
     /* 消息气泡样式 */
